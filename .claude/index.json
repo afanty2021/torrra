@@ -1,0 +1,247 @@
+{
+  "timestamp": "2025-11-19T15:45:22",
+  "project_name": "torrra",
+  "total_files_scanned": 53,
+  "estimated_total_files": 53,
+  "coverage_percentage": 100,
+  "scan_status": "completed",
+  "truncated": false,
+  "scan_round": 3,
+  "new_files_discovered": 6,
+  "target_achieved": true,
+  "modules": [
+    {
+      "path": "src/torrra",
+      "name": "torrra",
+      "type": "main_package",
+      "entry_point": "src/torrra/__main__.py",
+      "has_tests": false,
+      "has_config": true,
+      "coverage": 100,
+      "claude_md": true,
+      "sub_modules": [
+        {
+          "path": "src/torrra/core",
+          "claude_md": true,
+          "coverage": 100
+        },
+        {
+          "path": "src/torrra/indexers",
+          "claude_md": true,
+          "coverage": 100
+        },
+        {
+          "path": "src/torrra/screens",
+          "claude_md": true,
+          "coverage": 100
+        },
+        {
+          "path": "src/torrra/utils",
+          "claude_md": true,
+          "coverage": 100
+        }
+      ]
+    }
+  ],
+  "directories": {
+    "src/torrra/core": {
+      "purpose": "核心功能模块：配置管理、缓存、异常处理、常量定义",
+      "files": 6,
+      "key_files": ["config.py", "cache.py", "exceptions.py"],
+      "claude_md": true,
+      "coverage": 100
+    },
+    "src/torrra/indexers": {
+      "purpose": "索引器适配器：Jackett和Prowlarr API集成",
+      "files": 3,
+      "key_files": ["jackett.py", "prowlarr.py"],
+      "claude_md": true,
+      "coverage": 100
+    },
+    "src/torrra/screens": {
+      "purpose": "TUI屏幕界面：欢迎页、搜索页、CSS样式",
+      "files": 5,
+      "key_files": ["welcome.py", "search.py", "welcome.css", "search.css", "app.css"],
+      "claude_md": true,
+      "coverage": 100
+    },
+    "src/torrra/utils": {
+      "purpose": "工具函数：文件系统、索引器工具、辅助函数",
+      "files": 4,
+      "key_files": ["indexer.py", "helpers.py", "fs.py"],
+      "claude_md": true,
+      "coverage": 100
+    },
+    "构建与部署": {
+      "purpose": "打包、容器化、分发配置",
+      "files": 7,
+      "key_files": ["torrra.spec", "Dockerfile", "Dockerfile.dev", "docker-compose.yml", "scripts/bump_version.py", "pkgbuild-template/torrra/PKGBUILD", "pkgbuild-template/torrra-bin/PKGBUILD"],
+      "claude_md": true,
+      "coverage": 100
+    },
+    "DevOps配置": {
+      "purpose": "CI/CD、代码质量、依赖管理",
+      "files": 6,
+      "key_files": [".github/workflows/release.yml", ".github/dependabot.yml", ".pre-commit-config.yaml", ".github/ISSUE_TEMPLATE/bug_report.yml", ".github/ISSUE_TEMPLATE/feature_request.yml", ".github/ISSUE_TEMPLATE/config.yml"],
+      "claude_md": true,
+      "coverage": 100
+    },
+    "文档系统": {
+      "purpose": "Sphinx文档、用户指南、静态资源",
+      "files": 12,
+      "key_files": ["docs/conf.py", "docs/index.md", "docs/installation.md", "docs/usage.md", "docs/configuration.md", "docs/requirements.txt", "docs/Makefile", "docs/make.bat", "docs/contributing.md", "docs/indexers.md", "docs/roadmap.md", "docs/_static/demo.gif"],
+      "claude_md": true,
+      "coverage": 100
+    }
+  },
+  "new_discoveries": {
+    "css_files": [
+      "src/torrra/app.css",
+      "src/torrra/screens/search.css",
+      "src/torrra/screens/welcome.css"
+    ],
+    "build_files": [
+      "torrra.spec",
+      "scripts/bump_version.py"
+    ],
+    "containerization": [
+      "Dockerfile",
+      "Dockerfile.dev",
+      "docker-compose.yml"
+    ],
+    "packaging": [
+      "pkgbuild-template/torrra/PKGBUILD",
+      "pkgbuild-template/torrra-bin/PKGBUILD"
+    ],
+    "devops": [
+      ".pre-commit-config.yaml",
+      ".github/workflows/release.yml",
+      ".github/dependabot.yml",
+      ".github/ISSUE_TEMPLATE/bug_report.yml",
+      ".github/ISSUE_TEMPLATE/feature_request.yml"
+    ],
+    "documentation": [
+      "docs/requirements.txt",
+      "docs/conf.py",
+      "docs/Makefile",
+      "docs/make.bat",
+      "docs/index.md",
+      "docs/roadmap.md"
+    ],
+    "static_assets": [
+      "docs/_static/demo.gif"
+    ]
+  },
+  "generated_documents": {
+    "root_claude_md": "/Users/berton/Github/torrra/CLAUDE.md",
+    "main_module_claude_md": "/Users/berton/Github/torrra/src/torrra/CLAUDE.md",
+    "sub_module_docs": {
+      "core": "/Users/berton/Github/torrra/src/torrra/core/CLAUDE.md",
+      "indexers": "/Users/berton/Github/torrra/src/torrra/indexers/CLAUDE.md",
+      "screens": "/Users/berton/Github/torrra/src/torrra/screens/CLAUDE.md",
+      "utils": "/Users/berton/Github/torrra/src/torrra/utils/CLAUDE.md"
+    }
+  },
+  "ignored_patterns": [
+    "__pycache__/**",
+    "build/**",
+    "dist/**",
+    "*.egg-info",
+    ".venv",
+    "docs/_build/",
+    "*.lock",
+    ".git/**",
+    ".github/**"
+  ],
+  "gaps": {
+    "missing_tests": true,
+    "missing_ci": false,
+    "missing_docs": false,
+    "missing_api_docs": false,
+    "potential_files": []
+  },
+  "coverage_analysis": {
+    "code_coverage": {
+      "python_files": 22,
+      "scanned_python_files": 22,
+      "python_coverage": 100
+    },
+    "style_coverage": {
+      "css_files": 3,
+      "scanned_css_files": 3,
+      "css_coverage": 100
+    },
+    "config_coverage": {
+      "config_files": 8,
+      "scanned_config_files": 8,
+      "config_coverage": 100
+    },
+    "documentation_coverage": {
+      "doc_files": 12,
+      "scanned_doc_files": 12,
+      "doc_coverage": 100
+    },
+    "build_coverage": {
+      "build_files": 7,
+      "scanned_build_files": 7,
+      "build_coverage": 100
+    },
+    "devops_coverage": {
+      "devops_files": 6,
+      "scanned_devops_files": 6,
+      "devops_coverage": 100
+    }
+  },
+  "next_scan_recommendations": [],
+  "improvements_made": {
+    "round_1": [
+      "识别了核心模块结构",
+      "完成了基础架构分析"
+    ],
+    "round_2": [
+      "发现并分析了3个CSS样式文件",
+      "补充了构建和打包配置文档",
+      "完善了DevOps工作流程说明",
+      "添加了容器化部署文档",
+      "更新了项目架构图，包含新发现的模块"
+    ],
+    "round_3": [
+      "扫描了6个Sphinx文档相关文件",
+      "补充了完整的文档构建系统配置",
+      "分析了文档依赖和构建脚本",
+      "完善了项目文档结构说明",
+      "达到100%覆盖率目标"
+    ]
+  },
+  "architecture_highlights": {
+    "design_patterns": ["Screen模式", "适配器模式", "单例模式", "CSS样式分离"],
+    "key_technologies": ["Textual TUI", "libtorrent", "httpx", "Click", "diskcache", "PyInstaller", "Docker", "GitHub Actions", "Sphinx"],
+    "async_support": true,
+    "type_safety": true,
+    "cross_platform": true,
+    "containerization": true,
+    "ci_cd": true,
+    "automated_releases": true,
+    "css_styling": true,
+    "documentation_system": true
+  },
+  "quality_metrics": {
+    "code_quality_tools": ["Black", "isort", "pre-commit"],
+    "dependency_management": ["uv", "pyproject.toml", "Dependabot"],
+    "testing_coverage": 0,
+    "documentation_coverage": 100,
+    "build_automation": true,
+    "release_automation": true,
+    "sphinx_docs": true
+  },
+  "final_summary": {
+    "scan_rounds": 3,
+    "total_files_found": 53,
+    "files_scanned": 53,
+    "coverage_achieved": 100,
+    "target_met": true,
+    "modules_identified": 7,
+    "documentation_complete": true,
+    "sphinx_system_analyzed": true
+  }
+}

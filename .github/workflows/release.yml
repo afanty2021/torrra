@@ -6,7 +6,7 @@ on:
       - "v*"
 
 jobs:
-  publish_pypi:
+  pypi:
     name: Publish to PyPI
     runs-on: ubuntu-latest
     environment:
@@ -16,13 +16,17 @@ jobs:
       id-token: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: ".python-version"
 
       - name: Install uv and setup the python version
-        uses: astral-sh/setup-uv@v6
-
-      - name: Install the project
-        run: uv sync --all-groups
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
 
       - name: Build wheel
         run: uv build
@@ -30,15 +34,17 @@ jobs:
       - name: Publish package
         run: uv publish
 
-  publish_docker:
+  docker:
     name: Publish to Docker Hub
     runs-on: ubuntu-latest
     environment:
       name: dockerhub
       url: https://hub.docker.com/r/stabldev/torrra
+    permissions:
+      contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set version
         id: version
@@ -65,31 +71,38 @@ jobs:
             ${{ vars.DOCKERHUB_USERNAME }}/torrra:latest
             ${{ vars.DOCKERHUB_USERNAME }}/torrra:${{ steps.version.outputs.version }}
 
-  build_and_release_binaries:
-    name: Build on ${{ matrix.os }}
+  build_and_attach_bin:
+    name: Build & Attach Bin on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os:
+          - "ubuntu-latest"
+          - "windows-latest"
+          - "macos-latest"
     permissions:
       contents: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version-file: ".python-version"
+
+      - name: Install uv and setup the python version
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -e .
-          pip install pyinstaller
+          uv sync --locked
+          uv pip install pyinstaller
 
       - name: Build standalone binary
-        run: pyinstaller torrra.spec
+        run: uv run pyinstaller torrra.spec
 
       - name: Rename binary by platform
         shell: bash
@@ -110,13 +123,15 @@ jobs:
         with:
           files: dist-out/*
 
-  publish_aur:
+  aur:
     name: Publish to AUR
-    needs: build_and_release_binaries
+    needs: build_and_attach_bin
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set version
         id: version

@@ -1,19 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
-import os
-from glob import glob
-
-
-css_files = glob('src/torrra/**/*.css', recursive=True)
-additional_datas = [
-    (f, os.path.dirname(f).replace('src/', '')) for f in css_files
-]
 
 a = Analysis(
-    ['src/torrra/__main__.py'],
+    ["src/torrra/__main__.py"],
     pathex=[],
     binaries=[],
-    datas=additional_datas,
-    hiddenimports=[],
+    datas=[
+      ("src/torrra/app.tcss", "torrra"),
+    ],
+    hiddenimports=[
+      "torrra.indexers.jackett",
+      "torrra.indexers.prowlarr",
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -21,6 +18,7 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
@@ -29,7 +27,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='torrra',
+    name="torrra",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

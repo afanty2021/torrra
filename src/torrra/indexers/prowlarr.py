@@ -1,40 +1,55 @@
+import asyncio
 from typing import Any, cast
 
 import httpx
+from typing_extensions import override
 
 from torrra._types import Torrent, TorrentDict
-from torrra.core.cache import get_cache, has_cache, make_cache_key, set_cache
-from torrra.core.exceptions import ProwlarrConnectionError
+from torrra.core.cache import cache
+from torrra.core.exceptions import IndexerError
+from torrra.indexers.base import BaseIndexer
 
 
-class ProwlarrIndexer:
-    def __init__(self, url: str, api_key: str, timeout: int = 10):
-        self.url: str = url.rstrip("/")
-        self.api_key: str = api_key
-        self.timeout: int = timeout
+class ProwlarrIndexer(BaseIndexer):
+    @override
+    def get_search_url(self) -> str:
+        return f"{self.url}/api/v1/search"
 
-    async def search(self, query: str, use_cache: bool = True) -> list[Torrent]:
-        key = make_cache_key("prowlarr", query)
+    @override
+    def get_healthcheck_url(self) -> str:
+        return f"{self.url}/api/v1/health"
 
-        if use_cache and has_cache(key):
-            raw_data = cast(list[TorrentDict], get_cache(key))
+    @override
+    async def search(self, query: str, use_cache: bool = True) -> list[Torrent] | None:
+        key = cache.make_key("prowlarr", query)
+
+        if use_cache and key in cache:
+            raw_data = cast(list[TorrentDict], cache.get(key))
             return [Torrent.from_dict(d) for d in raw_data]
 
-        endpoint = f"{self.url}/api/v1/search"
+        url = self.get_search_url()
         params = {"apikey": self.api_key, "query": query}
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            resp = await client.get(endpoint, params=params)
-            resp.raise_for_status()
-            torrents = [self._normalize_result(r) for r in resp.json()]
+        for i in range(self.max_retries):
+            try:
+                async with httpx.AsyncClient(timeout=self.timeout) as client:
+                    resp = await client.get(url, params=params)
+                    resp.raise_for_status()
 
-        if use_cache:
-            set_cache(key, [t.to_dict() for t in torrents])
+                torrents = [self._normalize_result(r) for r in resp.json()]
+                if use_cache and torrents:
+                    cache.set(key, [t.to_dict() for t in torrents])
 
-        return torrents
+                return torrents
+            except httpx.TimeoutException:
+                if i < self.max_retries - 1:
+                    await asyncio.sleep(0.5 * 2**i)  # exponential backoff
+                else:  # raise error on final attempt
+                    raise
 
-    async def validate(self) -> bool:
-        url = f"{self.url}/api/v1/health"
+    @override
+    async def healthcheck(self) -> bool:
+        url = self.get_healthcheck_url()
         params = {"apikey": self.api_key}
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -44,8 +59,8 @@ class ProwlarrIndexer:
                 return True
 
             except httpx.RequestError:
-                raise ProwlarrConnectionError(
-                    f"could not connect to prowlarr server\n"
+                raise IndexerError(
+                    "could not connect to prowlarr server\n"
                     + "please make sure prowlarr server is running and the url is correct"
                 )
 
@@ -53,16 +68,17 @@ class ProwlarrIndexer:
                 status_code = e.response.status_code
 
                 if status_code == 401:
-                    raise ProwlarrConnectionError(
+                    raise IndexerError(
                         "invalid prowlarr server api key\n"
                         + "double-check the api key you provided"
                     )
                 else:
-                    raise ProwlarrConnectionError(
+                    raise IndexerError(
                         f"prowlarr server returned http {status_code}\n"
                         + "unexpected response from prowlarr server. please verify your setup"
                     )
 
+    @override
     def _normalize_result(self, r: dict[str, Any]) -> Torrent:
         return Torrent(
             title=r.get("title", "unknown"),
@@ -70,5 +86,5 @@ class ProwlarrIndexer:
             seeders=r.get("seeders", 0),
             leechers=r.get("leechers", 0),
             source=r.get("indexer", "unknown"),
-            magnet_uri=r.get("magnetUrl") or r.get("downloadUrl"),
+            magnet_uri=r.get("magnetUrl") or r["downloadUrl"],
         )

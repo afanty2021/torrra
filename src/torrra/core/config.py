@@ -1,15 +1,35 @@
 import ast
-import tomllib
+from contextlib import suppress
+from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import tomli_w
+
+try:
+    import tomllib  # Python 3.11+
+except ModuleNotFoundError:
+    import tomli as tomllib  # Python 3.10
 from platformdirs import user_config_dir, user_downloads_dir
 
+from torrra.core.constants import (
+    DEFAULT_CACHE_TTL,
+    DEFAULT_MAX_RETRIES,
+    DEFAULT_TIMEOUT,
+)
 from torrra.core.exceptions import ConfigError
 
 CONFIG_DIR = Path(user_config_dir("torrra"))
 CONFIG_FILE = CONFIG_DIR / "config.toml"
+
+# sentinel value used for robust
+# config.get(..., default=...) value check
+_sentinel = object()
+
+
+@lru_cache
+def get_config() -> "Config":
+    return Config()
 
 
 class Config:
@@ -17,7 +37,7 @@ class Config:
         self.config: dict[str, Any] = {}
         self._load_config()
 
-    def get(self, key_path: str) -> str:
+    def get(self, key_path: str, default: Any | None = _sentinel) -> Any:
         keys = key_path.split(".")
         current = self.config
 
@@ -32,6 +52,9 @@ class Config:
             return current
 
         except (KeyError, TypeError):
+            if default is not _sentinel:
+                return default
+
             if len(keys) > 1:
                 raise ConfigError(f"key does not contain a section: {key_path}")
             raise ConfigError(f"key not found: {key_path}")
@@ -50,12 +73,18 @@ class Config:
                     )
                 current = current[key]
 
-            try:
-                value = ast.literal_eval(value)
-            except (ValueError, SyntaxError):
-                pass
+            new_value: Any = value
+            # handle case-insensitive "true"/"false" for booleans
+            if value.lower() == "true":
+                new_value = True
+            elif value.lower() == "false":
+                new_value = False
+            # handle other literals (int, float, etc.)
+            else:  # convert data type silently
+                with suppress(ValueError, SyntaxError):
+                    new_value = ast.literal_eval(value)
 
-            current[keys[-1]] = value
+            current[keys[-1]] = new_value
             self._save_config()
 
         except (KeyError, TypeError) as e:
@@ -63,12 +92,23 @@ class Config:
 
     def list(self) -> list[str]:
         results: list[str] = []
-        for section in self.config:
-            for key, value in self.config[section].items():
-                if isinstance(value, bool):
-                    value = str(value).lower()
-                results.append(f"{section}.{key}={value}")
 
+        def _flatten_config(data: dict[str, Any], prefix: str = "") -> None:
+            # recursively iterate through config
+            for key, value in data.items():
+                # construct new prefix
+                new_prefix = f"{prefix}.{key}" if prefix else key
+                if isinstance(value, dict):
+                    # if dict, recurse deeper
+                    _flatten_config(cast(dict[str, Any], value), new_prefix)
+                else:
+                    if isinstance(value, bool):
+                        # if bool, convert to lowercase string
+                        value = str(value).lower()
+                    # append flattened key-value pair
+                    results.append(f"{new_prefix}={value}")
+
+        _flatten_config(self.config)
         return results
 
     def _load_config(self) -> None:
@@ -80,13 +120,21 @@ class Config:
             with open(CONFIG_FILE, "rb") as f:
                 self.config = tomllib.load(f)
         except Exception as e:
-            print(f"loading config: {e}")
+            print(f"loading config failed: {e}")
 
     def _create_default_config(self) -> None:
         self.config = {
             "general": {
                 "download_path": user_downloads_dir(),
-                "remember_last_path": True,
+                "download_in_external_client": False,
+                "use_transmission": False,
+                "transmission_user": "",
+                "transmission_pass": "",
+                "theme": "textual-dark",
+                "timeout": DEFAULT_TIMEOUT,
+                "max_retries": DEFAULT_MAX_RETRIES,
+                "use_cache": True,
+                "cache_ttl": DEFAULT_CACHE_TTL,
             }
         }
 

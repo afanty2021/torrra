@@ -2,50 +2,86 @@ from typing import ClassVar
 
 from textual import work
 from textual.app import App
-from textual.binding import BindingType
+from textual.binding import Binding, BindingType
+from textual.reactive import Reactive
 from textual.types import CSSPathType
 
 from torrra._types import Indexer
+from torrra.core.config import get_config
+from torrra.screens.home import HomeScreen
+from torrra.screens.theme_selector import ThemeSelectorScreen
 from torrra.screens.welcome import WelcomeScreen
 from torrra.utils.fs import get_resource_path
 
 
 class TorrraApp(App[None]):
+    theme: Reactive[str]
+
     TITLE: str | None = "torrra"
-    CSS_PATH: ClassVar[CSSPathType | None] = get_resource_path("app.css")
-    BINDINGS: ClassVar[list[BindingType]] = [
-        ("q", "quit", "Quit"),
-        ("d", "toggle_dark_mode", "Toggle dark mode"),
-        ("escape", "clear_focus", "Clear focus"),
-    ]
+    CSS_PATH: ClassVar[CSSPathType | None] = get_resource_path("app.tcss")
     ENABLE_COMMAND_PALETTE: ClassVar[bool] = False
+    BINDINGS: ClassVar[list[BindingType]] = [
+        Binding("ctrl+t", "switch_theme"),
+    ]
 
-    def __init__(self, provider: Indexer | None, use_cache: bool) -> None:
+    def __init__(
+        self,
+        indexer: Indexer,
+        use_cache: bool,
+        search_query: str | None,
+        direct_download: str | None = None,
+    ) -> None:
         super().__init__()
-        self.provider: Indexer | None = provider
+        self.indexer: Indexer = indexer
         self.use_cache: bool = use_cache
+        self.search_query: str | None = search_query
+        self.direct_download: str | None = direct_download
 
-    @work
+        # load theme from config file
+        theme = get_config().get("general.theme", "textual-dark")
+        if theme not in self.available_themes:
+            raise RuntimeError(
+                f"invalid theme '{theme}' configured.\n"
+                + f"available themes: {', '.join(sorted(self.available_themes))}"
+            )
+        self.theme = theme
+
     async def on_mount(self) -> None:
-        self.theme = (  # pyright: ignore[reportUnannotatedClassAttribute]
-            "catppuccin-mocha"
-        )
-
-        if query := await self.push_screen_wait(WelcomeScreen(provider=self.provider)):
-            from torrra.screens.search import SearchScreen
-
+        if self.direct_download:
+            # Direct download mode - go straight to home screen with downloads tab
             await self.push_screen(
-                SearchScreen(
-                    indexer=self.provider, initial_query=query, use_cache=self.use_cache
+                HomeScreen(
+                    indexer=self.indexer,
+                    search_query=self.search_query or "",
+                    use_cache=self.use_cache,
+                    direct_download=self.direct_download,
+                )
+            )
+        elif not (self.search_query and self.search_query.strip()):
+            self._show_welcome_and_search()
+        else:  # direct show search screen
+            await self.push_screen(
+                HomeScreen(
+                    indexer=self.indexer,
+                    search_query=self.search_query,
+                    use_cache=self.use_cache,
+                    direct_download=None,
                 )
             )
 
-    def action_toggle_dark_mode(self) -> None:
-        self.theme = (
-            "catppuccin-mocha"
-            if self.theme == "catppuccin-latte"
-            else "catppuccin-latte"
-        )
+    def action_switch_theme(self) -> None:
+        self.push_screen(ThemeSelectorScreen())
 
-    def action_clear_focus(self) -> None:
-        self.set_focus(None)
+    @work(exclusive=True)
+    async def _show_welcome_and_search(self) -> None:
+        if search_query := await self.push_screen_wait(
+            WelcomeScreen(indexer=self.indexer)
+        ):  # show both screens
+            await self.push_screen(
+                HomeScreen(
+                    indexer=self.indexer,
+                    search_query=search_query,
+                    use_cache=self.use_cache,
+                    direct_download=None,
+                )
+            )

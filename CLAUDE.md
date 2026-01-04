@@ -2,6 +2,13 @@
 
 ## 变更记录 (Changelog)
 
+**2026-01-04** - 同步v2.0.6版本发布内容
+- 新增直接下载功能：支持通过magnet URI和.torrent文件直接下载
+- 新增直接搜索命令：绕过欢迎界面直接搜索种子
+- 项目现已配置完整的pytest测试框架
+- Python版本要求：>=3.10（支持3.10-3.14）
+- Textual框架升级至6.5+
+
 **2025-11-19 15:45:22** - 完成第三次自适应初始化，覆盖率达到100%
 - 新增扫描6个Sphinx文档相关文件
 - 补充了完整的文档构建系统配置
@@ -64,15 +71,16 @@ graph TD
 ```
 
 ### 技术栈
-- **前端TUI**: Textual 4.0+ (提供终端UI框架)
-- **种子下载**: libtorrent (处理种子下载逻辑)
-- **HTTP客户端**: httpx (异步HTTP请求)
+- **前端TUI**: Textual 6.5+ (提供终端UI框架)
+- **种子下载**: libtorrent 2.0+ (处理种子下载逻辑)
+- **HTTP客户端**: httpx 0.28+ (异步HTTP请求)
 - **配置管理**: TOML格式 + platformdirs (跨平台目录管理)
 - **缓存**: diskcache (搜索结果缓存)
-- **CLI框架**: Click (命令行参数解析)
+- **CLI框架**: Click 8.3+ (命令行参数解析)
 - **构建工具**: PyInstaller (独立可执行文件)
 - **容器化**: Docker + Docker Compose
 - **代码质量**: Black + isort + pre-commit
+- **测试框架**: pytest + pytest-asyncio + pytest-cov + pytest-textual-snapshot
 - **CI/CD**: GitHub Actions + Dependabot
 - **文档系统**: Sphinx + MyST解析器 + Qiskit主题
 
@@ -100,10 +108,17 @@ pipx install torrra
 
 ### 快速启动
 ```bash
-# 自动检测配置的索引器
+# 方式1：交互式搜索（使用配置的默认索引器）
 torrra
 
-# 或指定Jackett
+# 方式2：直接搜索命令（绕过欢迎界面）
+torrra search "arch linux iso"
+
+# 方式3：直接下载（magnet URI或.torrent文件）
+torrra download "magnet:?xt=urn:btih:..."
+torrra download "/path/to/file.torrent"
+
+# 方式4：指定Jackett
 torrra jackett --url http://localhost:9117 --api-key <your_api_key>
 ```
 
@@ -113,7 +128,7 @@ torrra jackett --url http://localhost:9117 --api-key <your_api_key>
 git clone https://github.com/stabldev/torrra.git
 cd torrra
 
-# 安装依赖 (需要Python 3.13+)
+# 安装依赖 (需要Python 3.10+)
 pip install -e .
 
 # 开发依赖
@@ -254,25 +269,39 @@ docker-compose up
 
 ## 测试策略
 
-⚠️ **当前项目缺乏自动化测试**
+✅ **项目已配置完整的pytest测试框架**
 
-**建议的测试覆盖范围**：
+**当前测试配置**：
+- `pytest` - 测试框架核心
+- `pytest-asyncio` - 异步测试支持（asyncio_mode: auto）
+- `pytest-cov` - 代码覆盖率测试
+- `pytest-textual-snapshot` - Textual TUI快照测试
+- `respx` - HTTP请求模拟和测试
+- `textual-dev` - Textual应用开发工具
+
+**测试覆盖范围**：
 - `indexers/` 模块的API集成测试
 - `core/config.py` 配置管理测试
 - `utils/helpers.py` 工具函数测试
 - 端到端的TUI交互测试
 - 构建和容器化测试
 
-**推荐的测试工具**：
-- `pytest` - 测试框架
-- `pytest-asyncio` - 异步测试支持
-- `textual-dev` - Textual应用测试工具
-- `docker-compose` - 容器化测试
+**运行测试**：
+```bash
+# 运行所有测试
+pytest
+
+# 运行测试并生成覆盖率报告
+pytest --cov=src/torrra
+
+# 运行特定测试文件
+pytest tests/test_indexers.py
+```
 
 ## 编码规范
 
 ### Python代码规范
-- 使用 **Python 3.13+** 作为目标版本
+- 使用 **Python 3.10+** 作为目标版本（支持3.10-3.14）
 - 遵循 **PEP 8** 代码风格
 - 使用 **Type Hints** 进行类型注解
 - 优先使用 **dataclass** 定义数据结构
